@@ -3,5 +3,5 @@
 
 int main() {
     dyn_mem_init();
-    initialize_class_from_file("SimpleJava.class");
+    initialize_class_from_file("src/SimpleJava.class");
 }

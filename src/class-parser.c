@@ -25,5 +25,7 @@ void initialize_class_from_file(const char* file_name) {
     class = (Class*) object_alloc(sizeof(Class) + file_size);
     file = ((char*)class) + sizeof(Class);
 
+    char* text = (char*) object_alloc(20);
+
     fclose(fp);
 }

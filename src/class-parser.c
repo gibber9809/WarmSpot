@@ -3,6 +3,13 @@
 #include <stdlib.h>
 
 #include "memory-management.h"
+#include "endian-utils.h"
+#include <stdint.h>
+
+
+static int _parse_header(Class *class, char** file);
+
+static int _parse_constant_pool(Class *class, char** file);
 
 static size_t filesize(FILE* fp) {
     fseek(fp,0,SEEK_END);
@@ -11,7 +18,7 @@ static size_t filesize(FILE* fp) {
     return fsize;
 }
 
-void initialize_class_from_file(const char* file_name) {
+int initialize_class_from_file(const char* file_name) {
     FILE* fp = fopen(file_name,"r");
     size_t file_size = filesize(fp);
     Class* class = NULL;
@@ -24,8 +31,93 @@ void initialize_class_from_file(const char* file_name) {
      */
     class = (Class*) object_alloc(sizeof(Class) + file_size);
     file = ((char*)class) + sizeof(Class);
+    
+    if (fread((void*)file, file_size, 1, fp) != 1) {
+        //read failed
+        return -1;
+    }
 
-    char* text = (char*) object_alloc(20);
+    if (_parse_header(class, &file) < 0) {
+        return -1;
+    }
+
+    if (_parse_constant_pool(class, &file) < 0) {
+        return -1;
+    }
 
     fclose(fp);
+
+    return 0;
+}
+
+static int _parse_header(Class *class, char** file) {
+    uint32_t magic;
+    get4byte(&magic, (uint32_t*)*file);
+    if (magic != MAGIC) {
+        return -1;
+    }
+    *file += 4;
+
+    get2byte(&(class->minor_version), (uint16_t*)*file);
+    *file += 2;
+
+    get2byte(&(class->major_version), (uint16_t*)*file);
+    *file += 2;
+
+    return 0;
+}
+
+static void* _skip_constant(char** constant) {
+    void* ret = (void*) *constant;
+    uint8_t tag = (uint8_t)**constant;
+    uint16_t len;
+    *constant += 1;
+    
+    switch(tag) {
+        case CONSTANT_Class:
+        case CONSTANT_String:
+        case CONSTANT_MethodType:
+            *constant += 2;
+            break;
+        case CONSTANT_MethodHandle:
+            *constant += 3;
+            break;
+        case CONSTANT_Fieldref:
+        case CONSTANT_Methodref:
+        case CONSTANT_InterfaceMethodref:
+        case CONSTANT_Integer:
+        case CONSTANT_Float:
+        case CONSTANT_NameAndType:
+        case CONSTANT_InvokeDynamic:
+            *constant += 4;
+            break;
+        case CONSTANT_Long:
+        case CONSTANT_Double:
+            *constant += 8;
+            break;
+        case CONSTANT_Utf8:
+            get2byte(&len,(uint16_t*)*constant);
+            *constant += 2 + len;
+            break;
+        default:
+            break;
+    }
+
+    return ret;
+}
+
+static int _parse_constant_pool(Class *class, char** file) {
+    get2byte(&(class->constant_pool_count), (uint16_t*) *file);
+    *file += 2;
+
+    class->constant_pool_index = (void**) object_alloc( 
+        (class->constant_pool_count-1) * sizeof(void*) );
+    if (class->constant_pool_index == (void**) -1) {
+        return -1;
+    }
+
+    // Classes are one indexed
+    for (uint16_t i = 1; i < class->constant_pool_count; ++i) {
+        class->constant_pool_index[i-1] = _skip_constant(file);
+    }
 }

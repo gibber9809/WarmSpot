@@ -13,6 +13,12 @@ static int _parse_header(Class *class, char** file);
 
 static int _parse_constant_pool(Class *class, char** file);
 
+static void _parse_class_info(Class *class, char** file);
+
+static void _parse_interfaces(Class *class, char** file);
+
+static int _parse_fields(Class *class, char** file);
+
 static size_t filesize(FILE* fp) {
     fseek(fp,0,SEEK_END);
     long fsize = ftell(fp);
@@ -39,6 +45,9 @@ int initialize_class_from_file(const char* file_name) {
         return -1;
     }
 
+    fclose(fp);
+    fp = NULL;
+
     if (_parse_header(class, &file) < 0) {
         return -1;
     }
@@ -47,7 +56,13 @@ int initialize_class_from_file(const char* file_name) {
         return -1;
     }
 
-    fclose(fp);
+    _parse_class_info(class, &file);
+
+    _parse_interfaces(class, &file);
+
+    if (_parse_fields(class, &file) < 0) {
+        return -1;
+    }
 
     return 0;
 }
@@ -120,7 +135,7 @@ static int _parse_constant_pool(Class *class, char** file) {
         return -1;
     }
 
-    // Set indeces to NULL pointers
+    // Set indices to NULL pointers
     memset((void*)class->constant_pool_index, 0, 
         sizeof(void*) * (class->constant_pool_count - 1));
 
@@ -131,4 +146,66 @@ static int _parse_constant_pool(Class *class, char** file) {
         
         i += increment;
     }
+}
+
+static void _parse_class_info(Class *class, char** file) {
+    get2byte(&(class->access_flags),(uint16_t*) *file);
+    *file += 2;
+
+    get2byte(&(class->this_class),(uint16_t*) *file);
+    *file += 2;
+
+    get2byte(&(class->super_class),(uint16_t*) *file);
+    *file += 2;
+}
+
+static void _parse_interfaces(Class *class, char** file) {
+    get2byte(&(class->interfaces_count),(uint16_t*) *file);
+    *file += 2;
+
+    if (class->interfaces_count > 0)
+        class->interfaces = (uint16_t*) *file;
+    else
+        class->interfaces = NULL;
+
+    *file += sizeof(uint16_t) * class->interfaces_count;
+}
+
+static void _skip_attribute_info(char** attribute) {
+    uint32_t attribute_length;
+    *attribute += 2;
+    get4byte(&attribute_length,(uint32_t*) *attribute);
+    *attribute += 4 + attribute_length;
+}
+
+static void* _skip_field(char** file) {
+    void* ret = (void*) *file;
+    uint16_t attributes_count;
+    *file += 6;
+    get2byte(&attributes_count,(uint16_t*) *file);
+    *file += 2;
+
+    for (size_t i = 0; i < attributes_count; ++i) {
+        _skip_attribute_info(file);
+    }
+}
+
+static int _parse_fields(Class *class, char** file) {
+    get2byte(&(class->fields_count),(uint16_t*) *file);
+    *file += 2;
+
+    if (class->fields_count > 0)
+        class->field_index = (void**) object_alloc(
+            sizeof(void*) * class->fields_count );
+    else
+        class->field_index = NULL;
+
+    if (class->field_index == (void**)-1)
+        return -1;
+    
+    for (size_t i = 0; i < class->fields_count; ++i) {
+        class->field_index[i] = _skip_field(file);
+    }
+
+    return 0;
 }

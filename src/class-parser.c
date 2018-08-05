@@ -1,10 +1,12 @@
 #include "class-parser.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
 
 #include "memory-management.h"
 #include "endian-utils.h"
-#include <stdint.h>
+
 
 
 static int _parse_header(Class *class, char** file);
@@ -67,11 +69,12 @@ static int _parse_header(Class *class, char** file) {
     return 0;
 }
 
-static void* _skip_constant(char** constant) {
+static void* _skip_constant(char** constant, uint16_t* increment) {
     void* ret = (void*) *constant;
     uint8_t tag = (uint8_t)**constant;
     uint16_t len;
     *constant += 1;
+    *increment = 1;
     
     switch(tag) {
         case CONSTANT_Class:
@@ -94,6 +97,7 @@ static void* _skip_constant(char** constant) {
         case CONSTANT_Long:
         case CONSTANT_Double:
             *constant += 8;
+            *increment = 2;
             break;
         case CONSTANT_Utf8:
             get2byte(&len,(uint16_t*)*constant);
@@ -116,8 +120,15 @@ static int _parse_constant_pool(Class *class, char** file) {
         return -1;
     }
 
-    // Classes are one indexed
-    for (uint16_t i = 1; i < class->constant_pool_count; ++i) {
-        class->constant_pool_index[i-1] = _skip_constant(file);
+    // Set indeces to NULL pointers
+    memset((void*)class->constant_pool_index, 0, 
+        sizeof(void*) * (class->constant_pool_count - 1));
+
+    // Classes are 1 indexed
+    uint16_t increment = 0;
+    for (uint16_t i = 1; i < class->constant_pool_count;) {
+        class->constant_pool_index[i-1] = _skip_constant(file, &increment);
+        
+        i += increment;
     }
 }

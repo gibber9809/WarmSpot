@@ -54,7 +54,8 @@ void* object_alloc(size_t size) {
         else 
             heap.heap_end = (long) object + total_size;
     }
-    
+
+    object->size = size;
     heap.last_object->next = object;
     object->prev = heap.last_object;
     object->next = NULL;

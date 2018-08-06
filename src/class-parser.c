@@ -19,6 +19,10 @@ static void _parse_interfaces(Class *class, char** file);
 
 static int _parse_fields(Class *class, char** file);
 
+static int _parse_methods(Class *class, char** file);
+
+static int _parse_class_attributes(Class *class, char** file);
+
 static size_t filesize(FILE* fp) {
     fseek(fp,0,SEEK_END);
     long fsize = ftell(fp);
@@ -61,6 +65,14 @@ int initialize_class_from_file(const char* file_name) {
     _parse_interfaces(class, &file);
 
     if (_parse_fields(class, &file) < 0) {
+        return -1;
+    }
+
+    if (_parse_methods(class, &file) < 0) {
+        return -1;
+    }
+
+    if (_parse_class_attributes(class, &file) < 0) {
         return -1;
     }
 
@@ -171,14 +183,17 @@ static void _parse_interfaces(Class *class, char** file) {
     *file += sizeof(uint16_t) * class->interfaces_count;
 }
 
-static void _skip_attribute_info(char** attribute) {
+static void* _skip_attribute_info(char** attribute) {
     uint32_t attribute_length;
+    void *ret = (void*) *attribute;
     *attribute += 2;
     get4byte(&attribute_length,(uint32_t*) *attribute);
     *attribute += 4 + attribute_length;
+
+    return ret;
 }
 
-static void* _skip_field(char** file) {
+static void* _skip_field_or_method(char** file) {
     void* ret = (void*) *file;
     uint16_t attributes_count;
     *file += 6;
@@ -204,8 +219,44 @@ static int _parse_fields(Class *class, char** file) {
         return -1;
     
     for (size_t i = 0; i < class->fields_count; ++i) {
-        class->field_index[i] = _skip_field(file);
+        class->field_index[i] = _skip_field_or_method(file);
     }
 
     return 0;
+}
+
+static int _parse_methods(Class *class, char** file) {
+    get2byte(&(class->methods_count),(uint16_t*) *file);
+    *file += 2;
+
+    if (class->methods_count > 0)
+        class->method_index = (void**) object_alloc(
+            sizeof(void*) * class->methods_count );
+    else
+        class->method_index = NULL;
+
+    if (class->method_index == (void**) -1)
+        return -1;
+    
+    for (size_t i = 0; i < class->methods_count; ++i) {
+        class->method_index[i] = _skip_field_or_method(file);
+    }
+}
+
+static int _parse_class_attributes(Class *class, char** file) {
+    get2byte(&(class->attributes_count),(uint16_t*) *file);
+    *file += 2;
+
+    if (class->attributes_count > 0)
+        class->attribute_index = (void**) object_alloc(
+            sizeof(void*) * class->attributes_count );
+    else
+        class->attribute_index = NULL;
+    
+    if (class->attribute_index == (void**) -1)
+        return -1;
+    
+    for (size_t i = 0; i < class->attributes_count; ++i) {
+        class->attribute_index[i] = _skip_attribute_info(file);
+    }
 }

@@ -2,6 +2,7 @@
 #define CLASS_PARSER_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 #define MAGIC 0xCAFEBABE
 
@@ -76,9 +77,10 @@ typedef struct {
     uint16_t* interfaces;
     void** field_index;
     void** method_index;
-    void** attribute_index;
+    void* bootstrap_methods;
 } Class;
 
 int initialize_class_from_file(const char* file_name);
 
+bool const_strcmp(const char *str, Class* class, uint16_t constant_index);
 #endif

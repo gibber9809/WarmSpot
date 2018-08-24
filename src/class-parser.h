@@ -90,7 +90,7 @@ int create_class_from_class_info(Class* class, char* class_info);
 
 char* get_const(Class* class, uint16_t constant_index);
 
-Class* find_class_from_class_info(char* class_info, void* loader);
+Class* find_class_from_class_info(Class* class, char* class_info, void* loader);
 
 bool const_utf8cmp(char* utf8info1, char* utf8info2);
 

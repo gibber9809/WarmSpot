@@ -38,6 +38,7 @@ static void* _skip_field_or_method(char** file, Class* class, size_t* alloc_size
 
 static int _relocate_class(Class **classref, size_t alloc_size, size_t index_offset);
 
+static bool _class_infocmp(Class* class1, char* classinfo1, Class* class2, char* classinfo2);
 
 static size_t filesize(FILE* fp) {
     fseek(fp,0,SEEK_END);
@@ -51,7 +52,7 @@ char* get_const(Class* class, uint16_t constant_index) {
     return (char*) class->constant_pool_index[constant_index - 1];
 }
 
-Class* find_class_from_class_info(char* class_info, void* loader) {
+Class* find_class_from_class_info(Class* class, char* class_info, void* loader) {
     ClassMem* cur_classmem = heap.first_class;
     Class* cur_class;
     char* cur_class_info;
@@ -60,7 +61,8 @@ Class* find_class_from_class_info(char* class_info, void* loader) {
         cur_class = (Class*) (((char*)cur_classmem) + sizeof(ClassMem));
         cur_class_info = get_const(cur_class, cur_class->this_class);
 
-        if (cur_class->initiating_loader == loader && const_utf8cmp(class_info, cur_class_info))
+        if (cur_class->initiating_loader == loader 
+            && _class_infocmp(class, class_info, cur_class, cur_class_info))
             return cur_class;
 
         cur_classmem = cur_classmem->next;
@@ -80,7 +82,7 @@ int create_class_from_const_class_info(Class* class, char* class_info) {
     char* path;
 
     // Check if the class has already been created (assume bootstrap class loader)
-    if (find_class_from_class_info(class_info, NULL) != NULL)
+    if (find_class_from_class_info(class, class_info, NULL) != NULL)
         return 0;
 
     get2byte(&descriptor_index, (uint16_t*)(class_info + 1));
@@ -308,6 +310,18 @@ static int _relocate_class(Class **classref, size_t alloc_size, size_t index_off
     *classref = nclass;
 
     return 0;
+}
+
+static bool _class_infocmp(Class* class1, char* classinfo1, Class* class2, char* classinfo2) {
+    char* utf8info1, *utf8info2;
+    uint16_t utf8index1, utf8index2;
+
+    get2byte(&utf8index1, (uint16_t*) (classinfo1+1));
+    get2byte(&utf8index2, (uint16_t*) (classinfo2+1));
+    utf8info1 = get_const(class1, utf8index1);
+    utf8info2 = get_const(class2, utf8index2);
+
+    return const_utf8cmp(utf8info1, utf8info2);
 }
 
 bool const_utf8cmp(char* utf8info1, char* utf8info2) {

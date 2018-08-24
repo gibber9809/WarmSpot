@@ -12,13 +12,23 @@ struct Object {
 };
 typedef struct Object Object;
 
+struct ClassMem {
+    struct ClassMem* next;
+    size_t size;
+};
+typedef struct ClassMem ClassMem;
+
 typedef struct {
     long heap_start;
     long dyn_object_start;
     long heap_end;
     Object* first_object;
     Object* last_object;
+    ClassMem* first_class;
+    ClassMem* last_class;
 } HeapState;
+
+extern HeapState heap;
 
 
 void dyn_mem_init();

@@ -15,12 +15,41 @@ void dyn_mem_init() {
     
     heap.dyn_object_start = heap.heap_start + INITIAL_HEAP_SIZE/2;
     heap.dyn_object_start = ALIGN(heap.dyn_object_start);
+
+    heap.first_object = heap.last_object = NULL;
+    heap.first_class = heap.last_class = NULL;
 }
 
-
 void* class_alloc(size_t size) {
-    // Dummy implementation
-    return (void*)heap.heap_start;
+    ClassMem* class;
+    size_t total_size = size + sizeof(ClassMem);
+
+    if (heap.first_class == NULL) {
+        class = heap.first_class = heap.last_class = (ClassMem*) heap.heap_start;
+
+        if (heap.dyn_object_start - heap.heap_start < total_size) {
+            heap.first_class = NULL;
+            return (void*) -1;
+        }
+
+        class->next = NULL;
+        class->size = size;
+
+        return  ((void*)class) + sizeof(ClassMem);
+    }
+    
+    class = (ClassMem*) (((void*)heap.last_class) + heap.last_class->size + sizeof(ClassMem));
+    class = (ClassMem*) ALIGN((long)class);
+
+    if (heap.dyn_object_start - (long) class < total_size)
+        return (void*) -1;
+    
+    heap.last_class->next = class;
+    class->next = NULL;
+    heap.last_class = class;
+    class->size = size;
+
+    return ((void*)class) + sizeof(ClassMem);
 }
 
 void* object_alloc(size_t size) {
@@ -34,9 +63,10 @@ void* object_alloc(size_t size) {
 
         if (heap.heap_end - heap.dyn_object_start < total_size) {
             // Extend the heap to be long enough
-            if (sbrk(total_size - (heap.heap_end - heap.dyn_object_start)) == (void*)-1)
+            if (sbrk(total_size - (heap.heap_end - heap.dyn_object_start)) == (void*)-1) {
+                heap.first_object = NULL;
                 return (void*) -1;
-            else
+            } else
                 heap.heap_end = (long) object + total_size;
         }
 

@@ -12,7 +12,9 @@
 const char *ConstantValue = "ConstantValue";
 const char *Code = "Code";
 const char *Exceptions = "Exceptions";
-const char *BootsrapMethods = "BootstrapMethods"; 
+const char *BootsrapMethods = "BootstrapMethods";
+const char *DOTCLASS = ".class";
+const char* jcl_path = NULL;
 
 static int _parse_header(Class *class, char** file);
 
@@ -34,7 +36,7 @@ static void* _skip_attribute_info(char** attribute, size_t* alloc_size);
 
 static void* _skip_field_or_method(char** file, Class* class, size_t* alloc_size, int nattr, ...);
 
-static int _relocate_class(Class *class, size_t alloc_size, size_t index_offset);
+static int _relocate_class(Class **classref, size_t alloc_size, size_t index_offset);
 
 
 static size_t filesize(FILE* fp) {
@@ -44,14 +46,75 @@ static size_t filesize(FILE* fp) {
     return fsize;
 }
 
-int initialize_class_from_file(const char* file_name) {
-    FILE* fp = fopen(file_name,"r");
-    size_t file_size = filesize(fp);
+char* get_const(Class* class, uint16_t constant_index) {
+    //assert
+    return (char*) class->constant_pool_index[constant_index - 1];
+}
+
+Class* find_class_from_class_info(char* class_info, void* loader) {
+    ClassMem* cur_classmem = heap.first_class;
+    Class* cur_class;
+    char* cur_class_info;
+
+    while (cur_classmem != NULL) {
+        cur_class = (Class*) (((char*)cur_classmem) + sizeof(ClassMem));
+        cur_class_info = get_const(cur_class, cur_class->this_class);
+
+        if (cur_class->initiating_loader == loader && const_utf8cmp(class_info, cur_class_info))
+            return cur_class;
+
+        cur_classmem = cur_classmem->next;
+    }
+
+    return NULL;
+}
+
+int create_class_from_const_class_info(Class* class, char* class_info) {
+    int rc;
+    char* descriptor;
+    uint16_t descriptor_index;
+    uint16_t descriptor_len;
+    size_t path_len;
+    size_t jcl_path_len;
+    size_t dotclass_len;
+    char* path;
+
+    // Check if the class has already been created (assume bootstrap class loader)
+    if (find_class_from_class_info(class_info, NULL) != NULL)
+        return 0;
+
+    get2byte(&descriptor_index, (uint16_t*)(class_info + 1));
+    descriptor = get_const(class, descriptor_index);
+
+    get2byte(&descriptor_len, (uint16_t*)(descriptor + 1));
+    jcl_path_len = strlen(jcl_path);
+    dotclass_len = strlen(DOTCLASS);
+    path_len = descriptor_len + jcl_path_len + dotclass_len + 1;
+
+    path = object_alloc(path_len);
+    memcpy(path, jcl_path, jcl_path_len);
+    memcpy(path + jcl_path_len, descriptor+3, descriptor_len);
+    memcpy(path + jcl_path_len + descriptor_len, DOTCLASS, dotclass_len);
+    path[jcl_path_len + descriptor_len + dotclass_len] = '\0';
+
+    rc = create_class_from_file(path);
+    object_free(path);
+
+    return rc;
+}
+
+int create_class_from_file(const char* file_name) {
+    FILE* fp;
+    size_t file_size;
     size_t alloc_size = sizeof(Class);
     size_t index_offset;
     Class* class = NULL;
     char* file = NULL;
     char* file_start = NULL;
+
+    fp = fopen(file_name,"r");
+    if (fp == NULL) return -1;
+    file_size = filesize(fp);
 
     /*
      * Allocate space for the class on the heap. The class will
@@ -95,9 +158,22 @@ int initialize_class_from_file(const char* file_name) {
     alloc_size += sizeof(void*) 
         * (class->constant_pool_count-1 + class->fields_count + class->methods_count);
 
-    if (_relocate_class(class, alloc_size, index_offset) < 0) {
+    // TODO: Figure out how much space is needed for static variables
+    // Start Preparation phase by setting all of that memory to 0 in _relocate_class
+
+    if (_relocate_class(&class, alloc_size, index_offset) < 0) {
         return -1;
     }
+
+    // Resolve superclass
+    // TODO: check for circularity
+    if (class->super_class != 0)
+        create_class_from_const_class_info(class, get_const(class, class->super_class));
+
+    // Resolve superinterfaces
+    
+    // Mark as having bootstrap loader as defining loader, and initiating loader
+    class->defining_loader = class->initiating_loader = NULL;
 
     return 0;
 }
@@ -116,8 +192,9 @@ static char* _find_attribute(uint16_t num_attr, Class* class, uint16_t* attribut
     return NULL;
 }
 
-static int _relocate_class(Class *class, size_t alloc_size, size_t index_offset) {
+static int _relocate_class(Class **classref, size_t alloc_size, size_t index_offset) {
     char *file;
+    Class *class = *classref;
     Class *nclass = class_alloc(alloc_size);
     if (nclass == (void*)-1) return -1;
 
@@ -152,6 +229,12 @@ static int _relocate_class(Class *class, size_t alloc_size, size_t index_offset)
         memcpy((void*)file, const_loc, const_size);
         file += const_size;
         i += increment;        
+    }
+
+    if (class->interfaces_count > 0) {
+        nclass->interfaces = (uint16_t*) file;
+        memcpy((void*)file, class->interfaces, sizeof(uint16_t)*class->interfaces_count);
+        *file += sizeof(uint16_t) * class->interfaces_count;
     }
 
     uint16_t num_attr = 0;
@@ -222,7 +305,23 @@ static int _relocate_class(Class *class, size_t alloc_size, size_t index_offset)
     object_free(class);
     class = NULL;
 
+    *classref = nclass;
+
     return 0;
+}
+
+bool const_utf8cmp(char* utf8info1, char* utf8info2) {
+    uint16_t len1, len2;
+
+    get2byte(&len1, (uint16_t*)(utf8info1+1));
+    get2byte(&len2, (uint16_t*)(utf8info2+1));
+    
+    if (len1 != len2) return false;
+
+    if (memcmp((void*) utf8info1, (void*) utf8info2, len1 + 3) == 0)
+        return true;
+    
+    return false;
 }
 
 bool const_strcmp(const char *str, Class *class, uint16_t constant_index) {
@@ -446,4 +545,6 @@ static int _parse_class_attributes(Class *class, char** file, size_t* alloc_size
             _skip_attribute_info(file, NULL);
         }
     }
+
+    class->attributes_count = class->bootstrap_methods != NULL ? 1 : 0; 
 }

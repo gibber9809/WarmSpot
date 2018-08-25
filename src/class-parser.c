@@ -40,6 +40,8 @@ static int _relocate_class(Class **classref, size_t alloc_size, size_t index_off
 
 static bool _class_infocmp(Class* class1, char* classinfo1, Class* class2, char* classinfo2);
 
+static Class* _find_class_from_string(char* str);
+
 static size_t filesize(FILE* fp) {
     fseek(fp,0,SEEK_END);
     long fsize = ftell(fp);
@@ -69,6 +71,64 @@ Class* find_class_from_class_info(Class* class, char* class_info, void* loader) 
     }
 
     return NULL;
+}
+
+static Class* _find_class_from_string(char* str) {
+    ClassMem* cur_classmem = heap.first_class;
+    Class* cur_class;
+    char* cur_class_info;
+    size_t len = strlen(str);
+    uint16_t descriptor_len, descriptor_index;
+    char* descriptor;
+
+    while (cur_classmem != NULL) {
+        cur_class = (Class*) (((char*)cur_classmem) + sizeof(ClassMem));
+        cur_class_info = get_const(cur_class, cur_class->this_class);
+        get2byte(&descriptor_index, (uint16_t*) &cur_class_info[1]);
+        descriptor = get_const(cur_class, descriptor_index);
+        get2byte(&descriptor_len, (uint16_t*) &descriptor[1]);
+
+        if (cur_class->initiating_loader == NULL
+            && descriptor_len == len
+            && (memcmp((void*)str,(void*)&descriptor[3] , len) == 0))
+            return cur_class;
+
+        cur_classmem = cur_classmem->next;
+    }
+
+    return NULL;
+}
+
+int initialize_class(Class* class) {
+    // TODO: implement class initialization
+    return 0;
+}
+
+int create_class_from_string(char* str) {
+    int rc;
+    size_t jcl_path_len, len, dotclass_len;
+    char* path;
+    
+    if (_find_class_from_string(str) != NULL) 
+        return 0;
+    
+    len = strlen(str);
+    jcl_path_len = strlen(jcl_path);
+    dotclass_len = strlen(DOTCLASS);
+
+    path = object_alloc(jcl_path_len + len + dotclass_len + 1);
+
+    memcpy((void*)path, (void*) jcl_path, jcl_path_len);
+    memcpy((void*)path + jcl_path_len, str, len);
+    memcpy((void*)path + jcl_path_len + len, DOTCLASS, dotclass_len);
+    path[jcl_path_len+len+dotclass_len] = '\0';
+
+    printf("HERE IS PATH: %s\n", path);
+
+    rc = create_class_from_file(path);
+    object_free(path);
+
+    return rc;
 }
 
 int create_class_from_const_class_info(Class* class, char* class_info) {

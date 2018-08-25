@@ -84,11 +84,11 @@ typedef struct {
     void* defining_loader;
 } Class;
 
-int create_class_from_file(const char* file_name);
+int create_class_from_file(Class** rclass, const char* file_name);
 
-int create_class_from_class_info(Class* class, char* class_info);
+int create_class_from_class_info(Class** rclass, Class* class, char* class_info);
 
-int create_class_from_string(char* str);
+int create_class_from_string(Class** rclass, char* str);
 
 int initialize_class(Class* class);
 

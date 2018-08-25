@@ -104,12 +104,14 @@ int initialize_class(Class* class) {
     return 0;
 }
 
-int create_class_from_string(char* str) {
+int create_class_from_string(Class** rclass, char* str) {
     int rc;
     size_t jcl_path_len, len, dotclass_len;
     char* path;
+    Class* dummy_rclass;
+    if (rclass == NULL) rclass = &dummy_rclass;
     
-    if (_find_class_from_string(str) != NULL) 
+    if ((*rclass = _find_class_from_string(str)) != NULL) 
         return 0;
     
     len = strlen(str);
@@ -125,13 +127,13 @@ int create_class_from_string(char* str) {
 
     printf("HERE IS PATH: %s\n", path);
 
-    rc = create_class_from_file(path);
+    rc = create_class_from_file(rclass, path);
     object_free(path);
 
     return rc;
 }
 
-int create_class_from_const_class_info(Class* class, char* class_info) {
+int create_class_from_const_class_info(Class** rclass, Class* class, char* class_info) {
     int rc;
     char* descriptor;
     uint16_t descriptor_index;
@@ -140,9 +142,11 @@ int create_class_from_const_class_info(Class* class, char* class_info) {
     size_t jcl_path_len;
     size_t dotclass_len;
     char* path;
+    Class* dummy_rclass;
+    if (rclass == NULL) rclass = &dummy_rclass;
 
     // Check if the class has already been created (assume bootstrap class loader)
-    if (find_class_from_class_info(class, class_info, NULL) != NULL)
+    if ((*rclass = find_class_from_class_info(class, class_info, NULL)) != NULL)
         return 0;
 
     get2byte(&descriptor_index, (uint16_t*)(class_info + 1));
@@ -159,13 +163,13 @@ int create_class_from_const_class_info(Class* class, char* class_info) {
     memcpy(path + jcl_path_len + descriptor_len, DOTCLASS, dotclass_len);
     path[jcl_path_len + descriptor_len + dotclass_len] = '\0';
 
-    rc = create_class_from_file(path);
+    rc = create_class_from_file(rclass, path);
     object_free(path);
 
     return rc;
 }
 
-int create_class_from_file(const char* file_name) {
+int create_class_from_file(Class** rclass, const char* file_name) {
     FILE* fp;
     size_t file_size;
     size_t alloc_size = sizeof(Class);
@@ -230,12 +234,15 @@ int create_class_from_file(const char* file_name) {
     // Resolve superclass
     // TODO: check for circularity
     if (class->super_class != 0)
-        create_class_from_const_class_info(class, get_const(class, class->super_class));
+        create_class_from_const_class_info(NULL, class, get_const(class, class->super_class));
 
     // Resolve superinterfaces
     
     // Mark as having bootstrap loader as defining loader, and initiating loader
     class->defining_loader = class->initiating_loader = NULL;
+
+    if (rclass != NULL)
+        *rclass = class;
 
     return 0;
 }

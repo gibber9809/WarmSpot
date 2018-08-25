@@ -88,6 +88,10 @@ int create_class_from_file(const char* file_name);
 
 int create_class_from_class_info(Class* class, char* class_info);
 
+int create_class_from_string(char* str);
+
+int initialize_class(Class* class);
+
 char* get_const(Class* class, uint16_t constant_index);
 
 Class* find_class_from_class_info(Class* class, char* class_info, void* loader);

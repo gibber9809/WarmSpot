@@ -9,12 +9,12 @@
 #include "memory-management.h"
 #include "endian-utils.h"
 
-const char *ConstantValue = "ConstantValue";
-const char *Code = "Code";
-const char *Exceptions = "Exceptions";
-const char *BootsrapMethods = "BootstrapMethods";
+const char *CONSTANT_VALUE = "ConstantValue";
+const char *CODE = "Code";
+const char *EXCEPTIONS = "Exceptions";
+const char *BOOTSTRAP_METHODS = "BootstrapMethods";
 const char *DOTCLASS = ".class";
-const char* jcl_path = NULL;
+const char *jcl_path = NULL;
 
 static int _parse_header(Class *class, char** file);
 
@@ -66,6 +66,17 @@ void get_method(Class* class, uint16_t method_index, MethodInfo* rmethod) {
         rmethod->attributes = (uint8_t*) &method[4];
     else
         rmethod->attributes = NULL;
+}
+
+void get_code(MethodInfo* method, Code* rcode) {
+    uint32_t code_length;
+
+    get2byte(&rcode->max_stack, (uint16_t*) &method->attributes[6]);
+    get2byte(&rcode->max_locals, (uint16_t*) &method->attributes[8]);
+    get4byte(&code_length, (uint32_t*) &method->attributes[10]);
+    rcode->code = &method->attributes[14];
+    rcode->exception_table = (uint16_t*) rcode->code + code_length + 2;
+    get2byte(&rcode->exc_table_len, &rcode->exception_table[-1]);
 }
 
 Class* find_class_from_class_info(Class* class, char* class_info, void* loader) {
@@ -332,7 +343,7 @@ static int _relocate_class(Class **classref, size_t alloc_size, size_t index_off
         get2byte(&num_attr, (uint16_t*)file);
         file += 2;
 
-        if ((attr_loc = _find_attribute(num_attr, nclass, (uint16_t*)old_file, ConstantValue)) != NULL) {
+        if ((attr_loc = _find_attribute(num_attr, nclass, (uint16_t*)old_file, CONSTANT_VALUE)) != NULL) {
             num_attr = 1;
             put2byte((uint16_t*)&file[-2],&num_attr);
 
@@ -354,7 +365,7 @@ static int _relocate_class(Class **classref, size_t alloc_size, size_t index_off
         file += 2;
         new_num_attr = 0;
 
-        if ((attr_loc = _find_attribute(num_attr, nclass, (uint16_t*)old_file, Code)) != NULL) {
+        if ((attr_loc = _find_attribute(num_attr, nclass, (uint16_t*)old_file, CODE)) != NULL) {
             new_num_attr += 1;
 
             get4byte(&attr_len, (uint32_t*)&attr_loc[2]);
@@ -362,7 +373,7 @@ static int _relocate_class(Class **classref, size_t alloc_size, size_t index_off
             file += 6 + attr_len;
         }
 
-        if ((attr_loc = _find_attribute(num_attr, nclass, (uint16_t*)old_file, Exceptions)) != NULL) {
+        if ((attr_loc = _find_attribute(num_attr, nclass, (uint16_t*)old_file, EXCEPTIONS)) != NULL) {
             new_num_attr += 1;
             
             get4byte(&attr_len, (uint32_t*)&attr_loc[2]);
@@ -600,7 +611,7 @@ static int _parse_fields(Class *class, char** file, size_t* alloc_size) {
     
     for (size_t i = 0; i < class->fields_count; ++i) {
         class->field_index[i] = _skip_field_or_method(file, class, alloc_size, 
-            1, ConstantValue);
+            1, CONSTANT_VALUE);
     }
 
     return 0;
@@ -621,7 +632,7 @@ static int _parse_methods(Class *class, char** file, size_t* alloc_size) {
     
     for (size_t i = 0; i < class->methods_count; ++i) {
         class->method_index[i] = _skip_field_or_method(file, class, alloc_size, 
-            2, Code, Exceptions);
+            2, CODE, EXCEPTIONS);
     }
 }
 
@@ -634,7 +645,7 @@ static int _parse_class_attributes(Class *class, char** file, size_t* alloc_size
     
     for (size_t i = 0; i < class->attributes_count; ++i) {
         get2byte(&const_index, (uint16_t*)*file);
-        if (const_strcmp(BootsrapMethods, class, const_index)) {
+        if (const_strcmp(BOOTSTRAP_METHODS, class, const_index)) {
             class->bootstrap_methods = _skip_attribute_info(file, alloc_size);
         } else {
             _skip_attribute_info(file, NULL);

@@ -92,6 +92,14 @@ typedef struct {
     uint8_t* attributes;
 } MethodInfo;
 
+typedef struct {
+    uint16_t max_stack;
+    uint16_t max_locals;
+    uint16_t exc_table_len;
+    uint8_t* code;
+    uint16_t* exception_table;
+} Code;
+
 int create_class_from_file(Class** rclass, const char* file_name);
 
 int create_class_from_class_info(Class** rclass, Class* class, char* class_info);
@@ -103,6 +111,8 @@ int initialize_class(Class* class);
 char* get_const(Class* class, uint16_t constant_index);
 
 void get_method(Class* class, uint16_t method_index, MethodInfo* rmethod);
+
+void get_code(MethodInfo* method, Code* rcode);
 
 Class* find_class_from_class_info(Class* class, char* class_info, void* loader);
 

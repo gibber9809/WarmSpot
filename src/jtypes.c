@@ -28,3 +28,37 @@ size_t jsizeof(char* jtype) {
             return 0;
     }
 }
+
+size_t jsizeofit(uint16_t jtype) {
+    switch(jtype) {
+        case JBYTE:
+            return sizeof(jbyte);
+        case JCHAR:
+            return sizeof(jchar);
+        case JDOUBLE:
+            return sizeof(jdouble);
+        case JFLOAT:
+            return sizeof(jfloat);
+        case JINT:
+            return sizeof(jint);
+        case JLONG:
+            return sizeof(jlong);
+        case JREF:
+        case JARRAY:
+        case JCLASS:
+            return sizeof(jref);
+        case JSHORT:
+            return sizeof(jshort);
+        case JBOOL:
+            return sizeof(jbool);
+        default:
+            return 0;
+    }
+}
+
+int indexsize(uint16_t jtype) {
+    if (jtype & (JDOUBLE | JLONG))
+        return 2;
+
+    return 1;
+}

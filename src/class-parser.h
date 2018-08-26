@@ -84,6 +84,14 @@ typedef struct {
     void* defining_loader;
 } Class;
 
+typedef struct {
+    uint16_t access_flags;
+    uint16_t name_index;
+    uint16_t descriptor_index;
+    uint16_t attributes_count;
+    uint8_t* attributes;
+} MethodInfo;
+
 int create_class_from_file(Class** rclass, const char* file_name);
 
 int create_class_from_class_info(Class** rclass, Class* class, char* class_info);
@@ -93,6 +101,8 @@ int create_class_from_string(Class** rclass, char* str);
 int initialize_class(Class* class);
 
 char* get_const(Class* class, uint16_t constant_index);
+
+void get_method(Class* class, uint16_t method_index, MethodInfo* rmethod);
 
 Class* find_class_from_class_info(Class* class, char* class_info, void* loader);
 

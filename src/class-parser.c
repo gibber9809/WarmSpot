@@ -54,6 +54,20 @@ char* get_const(Class* class, uint16_t constant_index) {
     return (char*) class->constant_pool_index[constant_index - 1];
 }
 
+void get_method(Class* class, uint16_t method_index, MethodInfo* rmethod) {
+    uint16_t* method = class->method_index[method_index];
+    
+    get2byte(&(rmethod->access_flags), method);
+    get2byte(&(rmethod->name_index), &method[1]);
+    get2byte(&(rmethod->descriptor_index), &method[2]);
+    get2byte(&(rmethod->attributes_count), &method[3]);
+    
+    if (rmethod->attributes_count > 0)
+        rmethod->attributes = (uint8_t*) &method[4];
+    else
+        rmethod->attributes = NULL;
+}
+
 Class* find_class_from_class_info(Class* class, char* class_info, void* loader) {
     ClassMem* cur_classmem = heap.first_class;
     Class* cur_class;

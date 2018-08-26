@@ -2,6 +2,7 @@
 
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdint.h>
 
 HeapState heap;
 
@@ -112,5 +113,20 @@ void object_free(void* object) {
     } else {
         ostruct->prev->next = ostruct->next;
         ostruct->next->prev = ostruct->prev;
+    }
+}
+
+uint16_t align(uint16_t offset, size_t bytes) {
+    switch(bytes) {
+        case 1:
+            return offset;
+        case 2:
+            return ((offset & 0x1) == 0 ? offset : offset + 0x1);
+        case 4:
+            return ((offset & 0x3) == 0 ? offset : (offset & (~0x3)) + 0x4);
+        case 8:
+            return ((offset & 0x7) == 0 ? offset : (offset & (~0x7)) + 0x4);
+        default:
+            return offset;
     }
 }

@@ -71,11 +71,11 @@ void get_method(Class* class, uint16_t method_index, MethodInfo* rmethod) {
 void get_code(MethodInfo* method, Code* rcode) {
     uint32_t code_length;
 
-    get2byte(&rcode->max_stack, (uint16_t*) &method->attributes[6]);
+    get2byte(&rcode->max_opstack, (uint16_t*) &method->attributes[6]);
     get2byte(&rcode->max_locals, (uint16_t*) &method->attributes[8]);
     get4byte(&code_length, (uint32_t*) &method->attributes[10]);
     rcode->code = &method->attributes[14];
-    rcode->exception_table = (uint16_t*) rcode->code + code_length + 2;
+    rcode->exception_table = (uint16_t*) (rcode->code + code_length + 2);
     get2byte(&rcode->exc_table_len, &rcode->exception_table[-1]);
 }
 

@@ -93,7 +93,7 @@ typedef struct {
 } MethodInfo;
 
 typedef struct {
-    uint16_t max_stack;
+    uint16_t max_opstack;
     uint16_t max_locals;
     uint16_t exc_table_len;
     uint8_t* code;

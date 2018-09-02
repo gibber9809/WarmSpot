@@ -15,7 +15,9 @@
 #define jarray  jref
 #define jclass  jref
 #define jbool   jint
+#define vartype uint16_t
 
+#define NOTYPE  0x0
 #define JBYTE   0x1
 #define JSHORT  0x2
 #define JCHAR   0x3
@@ -28,35 +30,22 @@
 #define JARRAY  (JREF|0x1)
 #define JCLASS  (JREF|0x2)
 
-#define JTYPEOF(T) JTYPE ## T
-#define JTYPEint8_t   JBYTE
-#define JTYPEint16_t  JSHORT
-#define JTYPEint32_t  JINT
-#define JTYPEint64_t  JLONG
-#define JTYPEuint16_t JCHAR
-#define JTYPEfloat    JFLOAT
-#define JTYPEdouble   JDOUBLE
-
-#define JINDEXSIZE(T) JINDEX ## T
-#define JINDEXint8_t   1
-#define JINDEXint16_t  1
-#define JINDEXint32_t  1
-#define JINDEXint64_t  2
-#define JINDEXuint16_t 1
-#define JINDEXfloat    1
-#define JINDEXdouble   2
-
-#define JSIZEOF(T) JSIZE ## T
-#define JSIZEint8_t   1
-#define JSIZEint16_t  2
-#define JSIZEint32_t  4
-#define JSIZEint64_t  8
-#define JSIZEuint16_t 2
-#define JSIZEfloat    4
-#define JSIZEdouble   8
+enum JType {
+    NoType  = NOTYPE,
+    JByte   = JBYTE,
+    JShort  = JSHORT,
+    JChar   = JCHAR,
+    JInt    = JINT,
+    JLong   = JLONG,
+    JFloat  = JLONG,
+    JDouble = JDOUBLE,
+    JRef    = JREF,
+    JBool   = JBOOL,
+    JArray  = JARRAY,
+    JClass  = JCLASS
+};
 
 size_t jsizeof(char* jtype);
-size_t jsizeofit(uint16_t jtype);
 int indexsize(uint16_t jtype);
 
 #endif

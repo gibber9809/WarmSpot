@@ -58,6 +58,14 @@ static void _iadd(StackFrame* frame) {
     push_opstack(frame, (char*) &result, JINT, frame->opstack_top, OPSTACK_BOTTOM);
 }
 
+static void _isub(StackFrame* frame) {
+    jint* value2 = (jint*) pop_opstack(frame);
+    jint* value1 = (jint*) pop_opstack(frame);
+    jint result = *value1 - *value2;
+
+    push_opstack(frame, (char*) &result, JINT, frame->opstack_top, OPSTACK_BOTTOM);
+}
+
 static void _idiv(StackFrame* frame) {
     jint* value2 = (jint*) pop_opstack(frame);
     jint* value1 = (jint*) pop_opstack(frame);
@@ -78,6 +86,13 @@ static void _irem(StackFrame* frame) {
     jint* value2 = (jint*) pop_opstack(frame);
     jint* value1 = (jint*) pop_opstack(frame);
     jint result = *value1 % *value2; // can throw
+
+    push_opstack(frame, (char*) &result, JINT, frame->opstack_top, OPSTACK_BOTTOM);
+}
+
+static void _ineg(StackFrame* frame) {
+    jint* value = (jint*) pop_opstack(frame);
+    jint result = -*value;
 
     push_opstack(frame, (char*) &result, JINT, frame->opstack_top, OPSTACK_BOTTOM);
 }
@@ -139,6 +154,10 @@ void execute(Cpu* cpu) {
             _iadd(cpu->frame);
             break;
 
+        case isub:
+            _isub(cpu->frame);
+            break;
+
         case idiv:
             _idiv(cpu->frame);
             break;
@@ -149,6 +168,10 @@ void execute(Cpu* cpu) {
 
         case irem:
             _irem(cpu->frame);
+            break;
+
+        case ineg:
+            _ineg(cpu->frame);
             break;
         
         default:

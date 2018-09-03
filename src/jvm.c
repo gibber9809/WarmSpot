@@ -1,5 +1,6 @@
 #include "class-parser.h"
 #include "memory-management.h"
+#include "pretty-print.h"
 #include "cpu.h"
 
 int main(int argc, const char *argv[]) {
@@ -16,8 +17,15 @@ int main(int argc, const char *argv[]) {
 
     if (initial_cpu == NULL) return 0;
 
+    print_locals(initial_cpu->frame->local_vars, initial_cpu->frame->max_locals, initial_cpu->frame->local_vars_base);
+
     while (true) {
         execute(initial_cpu);
+
+        if (!(initial_cpu->paused)) {
+            print_opstack(initial_cpu->frame->opstack, initial_cpu->frame->opstack_top, initial_cpu->frame->opstack_base);
+            print_locals(initial_cpu->frame->local_vars, initial_cpu->frame->max_locals, initial_cpu->frame->local_vars_base);
+        }       
     }
 
     return 0;

@@ -32,6 +32,9 @@ typedef struct StackFrame StackFrame;
 typedef struct {
     StackFrame* frame;
     void* error;
+    jlong rvalue;
+    vartype rtype;
+    bool paused;
 } Cpu;
 
 void execute(Cpu* cpu);

@@ -12,7 +12,7 @@ static void _set_opstack(OpstackVariable* opstack, jlong* opstack_base, char* da
 static uint16_t _walk_back_opstack(OpstackVariable* opstack, uint16_t start, int num);
 static uint16_t _find_empty_opstack(OpstackVariable* opstack, uint16_t start, uint16_t max_index);
 
-static void _iconst(StackFrame* frame, jint instruction) {
+static void _iconstn(StackFrame* frame, jint instruction) {
     jint const_value = instruction - iconst_0;
 
     push_opstack(frame, (char*) &const_value, JINT, frame->opstack_top, OPSTACK_BOTTOM);
@@ -24,14 +24,26 @@ static void _bipush(StackFrame* frame, jbyte* byte) {
     push_opstack(frame, (char*) &value, JINT, frame->opstack_top, OPSTACK_BOTTOM);
 }
 
-static void _iload(StackFrame* frame, uint16_t instruction) {
+static void _iload(StackFrame* frame, uint8_t index) {
+    jint* value = (jint*) get_local_var(frame, (uint16_t) index);
+
+    push_opstack(frame, (char*) value, JINT, frame->opstack_top, OPSTACK_BOTTOM);
+}
+
+static void _iloadn(StackFrame* frame, uint16_t instruction) {
     uint16_t index = instruction - iload_0;
     jint* load_value = (jint*) get_local_var(frame, index);
 
     push_opstack(frame, (char*) load_value, JINT, frame->opstack_top, OPSTACK_BOTTOM);
 }
 
-static void _istore(StackFrame* frame, uint16_t instruction) {
+static void _istore(StackFrame* frame, uint8_t index) {
+    jint* store_value = (jint*) pop_opstack(frame);
+
+    set_local_var(frame, (uint16_t) index, (char*) store_value, JINT);
+}
+
+static void _istoren(StackFrame* frame, uint16_t instruction) {
     uint16_t index = instruction - istore_0;
     jint* store_value = (jint*) pop_opstack(frame);
 
@@ -91,11 +103,16 @@ void execute(Cpu* cpu) {
         case iconst_3:
         case iconst_4:
         case iconst_5:
-            _iconst(cpu->frame, (jint) code[pc]);
+            _iconstn(cpu->frame, (jint) code[pc]);
             break;
 
         case bipush:
             _bipush(cpu->frame, (jbyte*) (&code[pc+1]));
+            pc_increment = 2;
+            break;
+
+        case iload:
+            _iload(cpu->frame, code[pc+1]);
             pc_increment = 2;
             break;
         
@@ -103,14 +120,19 @@ void execute(Cpu* cpu) {
         case iload_1:
         case iload_2:
         case iload_3:
-            _iload(cpu->frame, (uint16_t) code[pc]);
+            _iloadn(cpu->frame, (uint16_t) code[pc]);
+            break;
+
+        case istore:
+            _istore(cpu->frame, code[pc+1]);
+            pc_increment = 2;
             break;
 
         case istore_0:
         case istore_1:
         case istore_2:
         case istore_3:
-            _istore(cpu->frame, (uint16_t) code[pc]);
+            _istoren(cpu->frame, (uint16_t) code[pc]);
             break;
 
         case iadd:

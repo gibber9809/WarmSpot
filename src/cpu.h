@@ -60,10 +60,14 @@ enum Opcodes {
 
     bipush = 0x10,
 
+    iload = 0x15,
+
     iload_0 = 0x1a,
     iload_1 = 0x1b,
     iload_2 = 0x1c,
     iload_3 = 0x1d,
+
+    istore = 0x36,
 
     istore_0 = 0x3b,
     istore_1 = 0x3c,

@@ -5,7 +5,7 @@ BIN_NAME = test
 CC = gcc
 CFLAGS = -c -g
 
-OBJECTS = $(addprefix $(BUILD_DIR)/, jvm.o class-parser.o memory-management.o endian-utils.o jtypes.o cpu.o)
+OBJECTS = $(addprefix $(BUILD_DIR)/, jvm.o class-parser.o memory-management.o endian-utils.o jtypes.o cpu.o pretty-print.o)
 
 all: make_build_dir $(OBJECTS)
 	$(CC) $(BUILD_DIR)/*.o -o $(BUILD_DIR)/$(BIN_NAME)

@@ -183,6 +183,8 @@ StackFrame* new_stackframe(Class* class, MethodInfo* method, StackFrame* prev_fr
     rframe->class = class;
 
     memset((void*) rframe->opstack, NOTYPE, sizeof(OpstackVariable) * code.max_opstack);
+    memset((void*) rframe->local_vars_base, 0, sizeof(jlong) * code.max_locals);
+    memset((void*) rframe->local_vars, NOTYPE, sizeof(vartype) * code.max_locals);
 
     return rframe;
 }
@@ -346,6 +348,8 @@ jlong* pop_opstack(StackFrame* frame) {
     jlong* ref = &(frame->opstack_base[index]);
     frame->opstack[index].type = NOTYPE;
     frame->opstack_top = frame->opstack[index].prev;
+
+    return ref;
 }
 
 uint16_t push_opstack(StackFrame* frame, char* data, uint16_t type, uint16_t after, uint16_t next) {

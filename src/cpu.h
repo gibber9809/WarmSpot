@@ -58,6 +58,8 @@ enum Opcodes {
     iconst_4 = 0x7,
     iconst_5 = 0x8,
 
+    bipush = 0x10,
+
     iload_0 = 0x1a,
     iload_1 = 0x1b,
     iload_2 = 0x1c,
@@ -68,7 +70,9 @@ enum Opcodes {
     istore_2 = 0x3d,
     istore_3 = 0x3e,
 
-    iadd = 0x60
+    iadd = 0x60,
+
+    imul = 0x68
 };
 
 

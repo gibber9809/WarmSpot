@@ -40,6 +40,14 @@ static void _iadd(StackFrame* frame) {
     push_opstack(frame, (char*) &result, JINT, frame->opstack_top, OPSTACK_BOTTOM);
 }
 
+static void _imul(StackFrame* frame) {
+    jint* value1 = (jint*) pop_opstack(frame);
+    jint* value2 = (jint*) pop_opstack(frame);
+    jint result = *value1 * *value2;
+
+    push_opstack(frame, (char*) &result, JINT, frame->opstack_top, OPSTACK_BOTTOM);
+}
+
 void execute(Cpu* cpu) {
     uint8_t* code = cpu->frame->code;
     jlong* opstack_base = cpu->frame->opstack_base;
@@ -63,6 +71,12 @@ void execute(Cpu* cpu) {
         case iconst_5:
             _iconst(cpu->frame, (jint) code[pc]);
             break;
+
+        case bipush:
+            push_opstack(cpu->frame, (char*) (&code[pc+1]), 
+                JBYTE, cpu->frame->opstack_top, OPSTACK_BOTTOM);
+            pc_increment = 2;
+            break;
         
         case iload_0:
         case iload_1:
@@ -80,6 +94,10 @@ void execute(Cpu* cpu) {
 
         case iadd:
             _iadd(cpu->frame);
+            break;
+
+        case imul:
+            _imul(cpu->frame);
             break;
         
         default:

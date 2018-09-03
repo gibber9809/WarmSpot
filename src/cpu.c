@@ -18,6 +18,13 @@ static void _iconst(StackFrame* frame, jint instruction) {
     push_opstack(frame, (char*) &const_value, JINT, frame->opstack_top, OPSTACK_BOTTOM);
 }
 
+static void _istore(StackFrame* frame, uint16_t instruction) {
+    uint16_t index = instruction - istore_0;
+    jint* store_value = (jint*) pop_opstack(frame);
+
+    set_local_var(frame, index, (char*) store_value, JINT);
+}
+
 void execute(Cpu* cpu) {
     uint8_t* code = cpu->frame->code;
     jlong* opstack_base = cpu->frame->opstack_base;
@@ -27,7 +34,7 @@ void execute(Cpu* cpu) {
     bool should_increment_pc = true;
 
     if (cpu->paused) return;
-    printf("%x\n", code[pc]);
+    printf("0x%x\n", code[pc]);
 
     switch(code[pc]) {
         case nop:
@@ -41,6 +48,15 @@ void execute(Cpu* cpu) {
         case iconst_5:
             _iconst(cpu->frame, (jint) code[pc]);
             break;
+        
+
+        case istore_0:
+        case istore_1:
+        case istore_2:
+        case istore_3:
+            _istore(cpu->frame, (uint16_t) code[pc]);
+            break;
+        
         default:
             printf("Unimplemented Instruction: 0x%x = %u\n",code[pc], code[pc]);
             should_increment_pc = false;
@@ -294,6 +310,13 @@ static void _set_opstack(OpstackVariable* opstack, jlong* opstack_base, char* da
 
     opstack[index].type = type;
     opstack[index].prev = prev;
+}
+
+jlong* pop_opstack(StackFrame* frame) {
+    uint16_t index = frame->opstack_top;
+    jlong* ref = &(frame->opstack_base[index]);
+    frame->opstack[index].type = NOTYPE;
+    frame->opstack_top = frame->opstack[index].prev;
 }
 
 uint16_t push_opstack(StackFrame* frame, char* data, uint16_t type, uint16_t after, uint16_t next) {

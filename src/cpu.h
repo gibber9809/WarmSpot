@@ -44,16 +44,23 @@ StackFrame* new_stackframe(Class* class, MethodInfo* method, StackFrame* prev_fr
 void push_method_arguments(StackFrame* new_stackframe, OpstackVariable* prev_opstack, jlong* prev_opstack_data, uint16_t* prev_opstack_top, char* method_descriptor, bool this);
 void set_local_var(StackFrame* frame, uint16_t index, char* data, uint16_t type);
 uint16_t push_opstack(StackFrame* frame, char* data, uint16_t type, uint16_t after, uint16_t next);
+jlong* pop_opstack(StackFrame* frame);
 
 enum Opcodes {
     nop = 0x0,
+
     iconst_m1 = 0x2,
     iconst_0 = 0x3,
     iconst_1 = 0x4,
     iconst_2 = 0x5,
     iconst_3 = 0x6,
     iconst_4 = 0x7,
-    iconst_5 = 0x8
+    iconst_5 = 0x8,
+
+    istore_0 = 0x3b,
+    istore_1 = 0x3c,
+    istore_2 = 0x3d,
+    istore_3 = 0x3e
 };
 
 

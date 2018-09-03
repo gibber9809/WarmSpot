@@ -46,7 +46,14 @@ void set_local_var(StackFrame* frame, uint16_t index, char* data, uint16_t type)
 uint16_t push_opstack(StackFrame* frame, char* data, uint16_t type, uint16_t after, uint16_t next);
 
 enum Opcodes {
-    nop = 0x0
+    nop = 0x0,
+    iconst_m1 = 0x2,
+    iconst_0 = 0x3,
+    iconst_1 = 0x4,
+    iconst_2 = 0x5,
+    iconst_3 = 0x6,
+    iconst_4 = 0x7,
+    iconst_5 = 0x8
 };
 
 

@@ -37,7 +37,7 @@ enum JType {
     JChar   = JCHAR,
     JInt    = JINT,
     JLong   = JLONG,
-    JFloat  = JLONG,
+    JFloat  = JFLOAT,
     JDouble = JDOUBLE,
     JRef    = JREF,
     JBool   = JBOOL,

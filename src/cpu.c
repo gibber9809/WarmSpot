@@ -12,14 +12,17 @@ static uint16_t _walk_back_opstack(OpstackVariable* opstack, uint16_t start, int
 static uint16_t _find_empty_opstack(OpstackVariable* opstack, uint16_t start, uint16_t max_index);
 
 Cpu* init_first_cpu(Class* class, int argc, const char** argv) {
+    Cpu* rcpu = NULL;
     StackFrame* frame;
     jlong mock_opstack_data[2];
     OpstackVariable mock_opstack[2];
     jref ref = NULL;
+    char* method_descriptor;
     MethodInfo method_info;
     uint16_t mock_opstack_prev = OPSTACK_BOTTOM;
     uint16_t mock_opstack_top = 0;
     bool main_found = false;
+    bool static_method;
     // initialize the initial class, [Ljava/lang/String; class
     initialize_class(class);
     
@@ -39,7 +42,8 @@ Cpu* init_first_cpu(Class* class, int argc, const char** argv) {
     if (!main_found) return NULL;
 
     // if main is not static instantiate initial class
-    if (!(method_info.access_flags & ACC_STATIC))
+    static_method = (method_info.access_flags & ACC_STATIC) > 0;
+    if (!static_method)
         ; // instantiate main class
 
     // instantiate the [Ljava/lang/String;
@@ -52,9 +56,15 @@ Cpu* init_first_cpu(Class* class, int argc, const char** argv) {
     frame = new_stackframe(class, &method_info, NULL);
 
     // call push_method_arguments with mocked stackframe and new stackframe
-    //push_method_arguments(frame, mock_opstack, mock_opstack, (char*) mock_opstack_data, &mock_opstack_top)
+    method_descriptor = get_const(class, method_info.descriptor_index);    
+    push_method_arguments(frame, mock_opstack, mock_opstack_data, &mock_opstack_top, method_descriptor, !static_method);
 
-    return NULL;
+    rcpu = (Cpu*) object_alloc(sizeof(Cpu));
+
+    rcpu->frame = frame;
+    rcpu->error = NULL;
+
+    return rcpu;
 }
 
 StackFrame* new_stackframe(Class* class, MethodInfo* method, StackFrame* prev_frame) {
@@ -139,19 +149,21 @@ static size_t _count_method_args(char* descriptor) {
     return nargs;
 }
 
-/*void push_method_arguments(StackFrame* new_stackframe, OpstackVariable* prev_opstack, char* prev_opstack_data, 
-    uint16_t* prev_opstack_top, uint8_t* method_descriptor, bool this) {
+void push_method_arguments(StackFrame* new_stackframe, OpstackVariable* prev_opstack, jlong* prev_opstack_data, 
+    uint16_t* prev_opstack_top, char* method_descriptor, bool this) {
     size_t nargs = _count_method_args((char*) &method_descriptor[3]);
     if (this) ++nargs;
 
-    size_t j = 0;
-    for (size_t i = *prev_opstack_top - nargs; i < *prev_opstack_top; ++i) {
-        char* data = &prev_opstack_data[prev_opstack[i].offset];
-        set_local_var(new_stackframe, data, prev_opstack[i].type);
-        ++j;
+    for (size_t i = 0; i < nargs; ++i) {
+        uint16_t arg_index = _walk_back_opstack(prev_opstack, *prev_opstack_top, nargs - i - 1);
+        set_local_var(new_stackframe, arg_index, 
+            (char*) (&prev_opstack_data[arg_index]), prev_opstack[arg_index].type);
+        prev_opstack[arg_index].type = 0;
     }
-    
-}*/
+
+    // Set the top of the opstack to prev of first 
+    *prev_opstack_top = _walk_back_opstack(prev_opstack, *prev_opstack_top, nargs - 1);
+}
 
 void set_local_var(StackFrame* frame, uint16_t index, char* data, uint16_t type) {
     vartype* stack_vars = frame->local_vars;
@@ -259,7 +271,12 @@ uint16_t push_opstack(StackFrame* frame, char* data, uint16_t type, uint16_t aft
 }
 
 static uint16_t _walk_back_opstack(OpstackVariable* opstack, uint16_t start, int num) {
-    while (num > 0 && opstack[start].prev != OPSTACK_BOTTOM) {
+    /*
+     * Returns the index holding the element num before start, if that would lead the
+     * result to be below the first item on the opstack OPSTACK_BOTTOM is returned.
+     */
+    
+    while (num > 0 && start != OPSTACK_BOTTOM) {
         start = opstack[start].prev;
         --num;
     }

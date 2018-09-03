@@ -36,7 +36,7 @@ typedef struct {
 
 Cpu* init_first_cpu(Class* class, int argc, const char** argv);
 StackFrame* new_stackframe(Class* class, MethodInfo* method, StackFrame* prev_frame);
-void push_method_arguments(StackFrame* new_stackframe, OpstackVariable* prev_opstack, char* prev_opstack_data, uint16_t* prev_opstack_top, uint8_t* method_descriptor, bool this);
+void push_method_arguments(StackFrame* new_stackframe, OpstackVariable* prev_opstack, jlong* prev_opstack_data, uint16_t* prev_opstack_top, char* method_descriptor, bool this);
 void set_local_var(StackFrame* frame, uint16_t index, char* data, uint16_t type);
 uint16_t push_opstack(StackFrame* frame, char* data, uint16_t type, uint16_t after, uint16_t next);
 

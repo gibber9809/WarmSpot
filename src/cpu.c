@@ -11,6 +11,30 @@ static void _set_opstack(OpstackVariable* opstack, jlong* opstack_base, char* da
 static uint16_t _walk_back_opstack(OpstackVariable* opstack, uint16_t start, int num);
 static uint16_t _find_empty_opstack(OpstackVariable* opstack, uint16_t start, uint16_t max_index);
 
+void execute(Cpu* cpu) {
+    uint8_t* code = cpu->frame->code;
+    jlong* opstack_base = cpu->frame->opstack_base;
+    jlong* local_vars_base = cpu->frame->local_vars_base;
+    uint32_t pc = cpu->frame->pc;
+    uint32_t pc_increment = 1;
+    bool should_increment_pc = true;
+
+    switch(code[pc]) {
+        nop:
+            break;
+        default:
+            break;
+    }
+
+    if (cpu->error != NULL) {
+        ; // an error was produced by this operation
+    }
+
+    if (should_increment_pc) {
+        cpu->frame->pc += pc_increment;
+    }
+}
+
 Cpu* init_first_cpu(Class* class, int argc, const char** argv) {
     Cpu* rcpu = NULL;
     StackFrame* frame;

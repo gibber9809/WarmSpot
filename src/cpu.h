@@ -66,7 +66,9 @@ enum Opcodes {
     istore_0 = 0x3b,
     istore_1 = 0x3c,
     istore_2 = 0x3d,
-    istore_3 = 0x3e
+    istore_3 = 0x3e,
+
+    iadd = 0x60
 };
 
 

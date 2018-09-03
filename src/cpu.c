@@ -18,6 +18,13 @@ static void _iconst(StackFrame* frame, jint instruction) {
     push_opstack(frame, (char*) &const_value, JINT, frame->opstack_top, OPSTACK_BOTTOM);
 }
 
+static void _iload(StackFrame* frame, uint16_t instruction) {
+    uint16_t index = instruction - iload_0;
+    jint* load_value = (jint*) get_local_var(frame, index);
+
+    push_opstack(frame, (char*) load_value, JINT, frame->opstack_top, OPSTACK_BOTTOM);
+}
+
 static void _istore(StackFrame* frame, uint16_t instruction) {
     uint16_t index = instruction - istore_0;
     jint* store_value = (jint*) pop_opstack(frame);
@@ -25,11 +32,12 @@ static void _istore(StackFrame* frame, uint16_t instruction) {
     set_local_var(frame, index, (char*) store_value, JINT);
 }
 
-static void _iload(StackFrame* frame, uint16_t instruction) {
-    uint16_t index = instruction - iload_0;
-    jint* load_value = (jint*) get_local_var(frame, index);
+static void _iadd(StackFrame* frame) {
+    jint* value1 = (jint*) pop_opstack(frame);
+    jint* value2 = (jint*) pop_opstack(frame);
+    jint result = *value1 + *value2;
 
-    push_opstack(frame, (char*) load_value, JINT, frame->opstack_top, OPSTACK_BOTTOM);
+    push_opstack(frame, (char*) &result, JINT, frame->opstack_top, OPSTACK_BOTTOM);
 }
 
 void execute(Cpu* cpu) {
@@ -68,6 +76,10 @@ void execute(Cpu* cpu) {
         case istore_2:
         case istore_3:
             _istore(cpu->frame, (uint16_t) code[pc]);
+            break;
+
+        case iadd:
+            _iadd(cpu->frame);
             break;
         
         default:

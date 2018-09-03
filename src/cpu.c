@@ -18,6 +18,12 @@ static void _iconst(StackFrame* frame, jint instruction) {
     push_opstack(frame, (char*) &const_value, JINT, frame->opstack_top, OPSTACK_BOTTOM);
 }
 
+static void _bipush(StackFrame* frame, jbyte* byte) {
+    jint value = (jint) *byte;
+
+    push_opstack(frame, (char*) &value, JINT, frame->opstack_top, OPSTACK_BOTTOM);
+}
+
 static void _iload(StackFrame* frame, uint16_t instruction) {
     uint16_t index = instruction - iload_0;
     jint* load_value = (jint*) get_local_var(frame, index);
@@ -33,17 +39,33 @@ static void _istore(StackFrame* frame, uint16_t instruction) {
 }
 
 static void _iadd(StackFrame* frame) {
-    jint* value1 = (jint*) pop_opstack(frame);
     jint* value2 = (jint*) pop_opstack(frame);
+    jint* value1 = (jint*) pop_opstack(frame);
     jint result = *value1 + *value2;
 
     push_opstack(frame, (char*) &result, JINT, frame->opstack_top, OPSTACK_BOTTOM);
 }
 
-static void _imul(StackFrame* frame) {
-    jint* value1 = (jint*) pop_opstack(frame);
+static void _idiv(StackFrame* frame) {
     jint* value2 = (jint*) pop_opstack(frame);
+    jint* value1 = (jint*) pop_opstack(frame);
+    jint result = *value1 / *value2; // can throw
+
+    push_opstack(frame, (char*) &result, JINT, frame->opstack_top, OPSTACK_BOTTOM);
+}
+
+static void _imul(StackFrame* frame) {
+    jint* value2 = (jint*) pop_opstack(frame);
+    jint* value1 = (jint*) pop_opstack(frame);
     jint result = *value1 * *value2;
+
+    push_opstack(frame, (char*) &result, JINT, frame->opstack_top, OPSTACK_BOTTOM);
+}
+
+static void _irem(StackFrame* frame) {
+    jint* value2 = (jint*) pop_opstack(frame);
+    jint* value1 = (jint*) pop_opstack(frame);
+    jint result = *value1 % *value2; // can throw
 
     push_opstack(frame, (char*) &result, JINT, frame->opstack_top, OPSTACK_BOTTOM);
 }
@@ -73,8 +95,7 @@ void execute(Cpu* cpu) {
             break;
 
         case bipush:
-            push_opstack(cpu->frame, (char*) (&code[pc+1]), 
-                JBYTE, cpu->frame->opstack_top, OPSTACK_BOTTOM);
+            _bipush(cpu->frame, (jbyte*) (&code[pc+1]));
             pc_increment = 2;
             break;
         
@@ -96,8 +117,16 @@ void execute(Cpu* cpu) {
             _iadd(cpu->frame);
             break;
 
+        case idiv:
+            _idiv(cpu->frame);
+            break;
+
         case imul:
             _imul(cpu->frame);
+            break;
+
+        case irem:
+            _irem(cpu->frame);
             break;
         
         default:

@@ -72,7 +72,11 @@ enum Opcodes {
 
     iadd = 0x60,
 
-    imul = 0x68
+    idiv = 0x6c,
+
+    imul = 0x68,
+
+    irem = 0x70
 };
 
 

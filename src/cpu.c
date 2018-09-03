@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "cpu.h"
@@ -19,10 +20,15 @@ void execute(Cpu* cpu) {
     uint32_t pc_increment = 1;
     bool should_increment_pc = true;
 
+    if (cpu->paused) return;
+
     switch(code[pc]) {
         nop:
             break;
         default:
+            printf("Unimplemented Instruction: 0x%x = %u\n",code[pc], code[pc]);
+            should_increment_pc = false;
+            cpu->paused = true;
             break;
     }
 
@@ -87,6 +93,7 @@ Cpu* init_first_cpu(Class* class, int argc, const char** argv) {
 
     rcpu->frame = frame;
     rcpu->error = NULL;
+    rcpu->paused = false;
 
     return rcpu;
 }

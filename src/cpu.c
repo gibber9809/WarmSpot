@@ -12,6 +12,12 @@ static void _set_opstack(OpstackVariable* opstack, jlong* opstack_base, char* da
 static uint16_t _walk_back_opstack(OpstackVariable* opstack, uint16_t start, int num);
 static uint16_t _find_empty_opstack(OpstackVariable* opstack, uint16_t start, uint16_t max_index);
 
+static void _iconst(StackFrame* frame, jint instruction) {
+    jint const_value = instruction - iconst_0;
+
+    push_opstack(frame, (char*) &const_value, JINT, frame->opstack_top, OPSTACK_BOTTOM);
+}
+
 void execute(Cpu* cpu) {
     uint8_t* code = cpu->frame->code;
     jlong* opstack_base = cpu->frame->opstack_base;
@@ -21,9 +27,19 @@ void execute(Cpu* cpu) {
     bool should_increment_pc = true;
 
     if (cpu->paused) return;
+    printf("%x\n", code[pc]);
 
     switch(code[pc]) {
-        nop:
+        case nop:
+            break;
+        case iconst_m1:
+        case iconst_0:
+        case iconst_1:
+        case iconst_2:
+        case iconst_3:
+        case iconst_4:
+        case iconst_5:
+            _iconst(cpu->frame, (jint) code[pc]);
             break;
         default:
             printf("Unimplemented Instruction: 0x%x = %u\n",code[pc], code[pc]);
@@ -116,7 +132,7 @@ StackFrame* new_stackframe(Class* class, MethodInfo* method, StackFrame* prev_fr
     rframe->exc_table_len = code.exc_table_len;
     rframe->max_locals = code.max_locals;
     rframe->max_opstack = code.max_opstack;
-    rframe->opstack_top = 0;
+    rframe->opstack_top = OPSTACK_BOTTOM;
     rframe->local_vars_base =  (jlong*) (((char*)rframe) + ALIGN(sizeof(StackFrame)));
     rframe->opstack_base = &(rframe->local_vars_base[code.max_locals]);
     rframe->opstack = (OpstackVariable*) &(rframe->opstack_base[code.max_opstack]);
@@ -201,36 +217,36 @@ void set_local_var(StackFrame* frame, uint16_t index, char* data, uint16_t type)
     char* local_var = (char*) &(frame->local_vars_base[index]);
     
     switch(type) {
-        JByte:
+        case JByte:
             *((jbyte*)local_var) = *((jbyte*)data);
             break;
-        JShort:
+        case JShort:
             *((jshort*)local_var) = *((jshort*)data);
             break;
-        JInt:
+        case JInt:
             *((jint*)local_var) = *((jint*)data);
             break;
-        JLong:
+        case JLong:
             *((jlong*)local_var) = *((jlong*)data);
             stack_vars[index+1] = NOTYPE;
             break;
-        JBool:
+        case JBool:
             *((jbool*)local_var) = *((jbool*)data);
             break;
-        JFloat:
+        case JFloat:
             *((jfloat*)local_var) = *((jfloat*)data);
             break;
-        JDouble:
+        case JDouble:
             *((jdouble*)local_var) = *((jdouble*)data);
             stack_vars[index+1] = NOTYPE;
             break;
-        JRef:
+        case JRef:
             *((jref*)local_var) = *((jref*)data);
             break;
-        JArray:
+        case JArray:
             *((jarray*)local_var) = *((jarray*)data);
             break;
-        JClass:
+        case JClass:
             *((jclass*)local_var) = *((jclass*)data);
             break;
         default:
@@ -242,34 +258,34 @@ void set_local_var(StackFrame* frame, uint16_t index, char* data, uint16_t type)
 static void _set_opstack(OpstackVariable* opstack, jlong* opstack_base, char* data, uint16_t type, uint16_t index, uint16_t prev) {
     char* var = (char*) &opstack_base[index];
     switch(type) {
-        JByte:
+        case JByte:
             *((jbyte*)var) = *((jbyte*)data);
             break;
-        JShort:
+        case JShort:
             *((jshort*)var) = *((jshort*)data);
             break;
-        JInt:
+        case JInt:
             *((jint*)var) = *((jint*)data);
             break;
-        JLong:
+        case JLong:
             *((jlong*)var) = *((jlong*)data);
             break;
-        JBool:
+        case JBool:
             *((jbool*)var) = *((jbool*)data);
             break;
-        JFloat:
+        case JFloat:
             *((jfloat*)var) = *((jfloat*)data);
             break;
-        JDouble:
+        case JDouble:
             *((jdouble*)var) = *((jdouble*)data);
             break;
-        JRef:
+        case JRef:
             *((jref*)var) = *((jref*)data);
             break;
-        JArray:
+        case JArray:
             *((jarray*)var) = *((jarray*)data);
             break;
-        JClass:
+        case JClass:
             *((jclass*)var) = *((jclass*)data);
             break;
         default:

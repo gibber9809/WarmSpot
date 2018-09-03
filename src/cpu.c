@@ -25,6 +25,13 @@ static void _istore(StackFrame* frame, uint16_t instruction) {
     set_local_var(frame, index, (char*) store_value, JINT);
 }
 
+static void _iload(StackFrame* frame, uint16_t instruction) {
+    uint16_t index = instruction - iload_0;
+    jint* load_value = (jint*) get_local_var(frame, index);
+
+    push_opstack(frame, (char*) load_value, JINT, frame->opstack_top, OPSTACK_BOTTOM);
+}
+
 void execute(Cpu* cpu) {
     uint8_t* code = cpu->frame->code;
     jlong* opstack_base = cpu->frame->opstack_base;
@@ -49,6 +56,12 @@ void execute(Cpu* cpu) {
             _iconst(cpu->frame, (jint) code[pc]);
             break;
         
+        case iload_0:
+        case iload_1:
+        case iload_2:
+        case iload_3:
+            _iload(cpu->frame, (uint16_t) code[pc]);
+            break;
 
         case istore_0:
         case istore_1:
@@ -226,6 +239,10 @@ void push_method_arguments(StackFrame* new_stackframe, OpstackVariable* prev_ops
 
     // Set the top of the opstack to prev of first 
     *prev_opstack_top = _walk_back_opstack(prev_opstack, *prev_opstack_top, nargs - 1);
+}
+
+jlong* get_local_var(StackFrame* frame, uint16_t index) {
+    return &(frame->local_vars_base[index]);
 }
 
 void set_local_var(StackFrame* frame, uint16_t index, char* data, uint16_t type) {

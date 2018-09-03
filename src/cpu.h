@@ -43,6 +43,7 @@ Cpu* init_first_cpu(Class* class, int argc, const char** argv);
 StackFrame* new_stackframe(Class* class, MethodInfo* method, StackFrame* prev_frame);
 void push_method_arguments(StackFrame* new_stackframe, OpstackVariable* prev_opstack, jlong* prev_opstack_data, uint16_t* prev_opstack_top, char* method_descriptor, bool this);
 void set_local_var(StackFrame* frame, uint16_t index, char* data, uint16_t type);
+jlong* get_local_var(StackFrame* frame, uint16_t index);
 uint16_t push_opstack(StackFrame* frame, char* data, uint16_t type, uint16_t after, uint16_t next);
 jlong* pop_opstack(StackFrame* frame);
 
@@ -56,6 +57,11 @@ enum Opcodes {
     iconst_3 = 0x6,
     iconst_4 = 0x7,
     iconst_5 = 0x8,
+
+    iload_0 = 0x1a,
+    iload_1 = 0x1b,
+    iload_2 = 0x1c,
+    iload_3 = 0x1d,
 
     istore_0 = 0x3b,
     istore_1 = 0x3c,

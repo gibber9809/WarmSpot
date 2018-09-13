@@ -36,7 +36,7 @@ void print_variable(jlong* var, vartype type) {
             printf("Short: %d\n", *((jshort*) var));
             break;
         case JInt:
-            printf("Int: %d\n", *((jint*) var));
+            printf("Int: %d Hex: 0x%x\n", *((jint*) var), *((jint*) var));
             break;
         case JLong:
             printf("Long: %ld\n", *((jlong*) var));

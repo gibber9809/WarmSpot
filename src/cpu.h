@@ -84,7 +84,13 @@ enum Opcodes {
 
     irem = 0x70,
 
-    ineg = 0x74
+    ineg = 0x74,
+
+    ishl = 0x78,
+
+    ishr = 0x7a,
+
+    iushr = 0x7c
 };
 
 

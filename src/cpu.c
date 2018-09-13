@@ -97,6 +97,30 @@ static void _ineg(StackFrame* frame) {
     push_opstack(frame, (char*) &result, JINT, frame->opstack_top, OPSTACK_BOTTOM);
 }
 
+static void _ishl(StackFrame* frame) {
+    jint* value2 = (jint*) pop_opstack(frame);
+    jint* value1 = (jint*) pop_opstack(frame);
+    jint result = *value1 << (*value2 & 0x1F);
+
+    push_opstack(frame, (char*) &result, JINT, frame->opstack_top, OPSTACK_BOTTOM);
+}
+
+static void _ishr(StackFrame* frame) {
+    jint* value2 = (jint*) pop_opstack(frame);
+    jint* value1 = (jint*) pop_opstack(frame);
+    jint result = *value1 >> (*value2 & 0x1F); // TODO: write tests for undefined behaviours
+
+    push_opstack(frame, (char*) &result, JINT, frame->opstack_top, OPSTACK_BOTTOM);
+}
+
+static void _iushr(StackFrame* frame) {
+    jint* value2 = (jint*) pop_opstack(frame);
+    jint* value1 = (jint*) pop_opstack(frame);
+    juint result = *((juint*)value1) >> (*value2 & 0x1F);
+
+    push_opstack(frame, (char*) &result, JINT, frame->opstack_top, OPSTACK_BOTTOM);
+}
+
 void execute(Cpu* cpu) {
     uint8_t* code = cpu->frame->code;
     jlong* opstack_base = cpu->frame->opstack_base;
@@ -172,6 +196,18 @@ void execute(Cpu* cpu) {
 
         case ineg:
             _ineg(cpu->frame);
+            break;
+
+        case ishl:
+            _ishl(cpu->frame);
+            break;
+
+        case ishr:
+            _ishr(cpu->frame);
+            break;
+
+        case iushr:
+            _iushr(cpu->frame);
             break;
         
         default:

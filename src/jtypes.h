@@ -17,6 +17,8 @@
 #define jbool   jint
 #define vartype uint16_t
 
+#define juint uint32_t
+
 #define NOTYPE  0x0
 #define JBYTE   0x1
 #define JSHORT  0x2

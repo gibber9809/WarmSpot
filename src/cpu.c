@@ -116,7 +116,31 @@ static void _ishr(StackFrame* frame) {
 static void _iushr(StackFrame* frame) {
     jint* value2 = (jint*) pop_opstack(frame);
     jint* value1 = (jint*) pop_opstack(frame);
-    juint result = *((juint*)value1) >> (*value2 & 0x1F);
+    juint result = *((juint*)value1) >> (*value2 & 0x1F); // TODO: write tests for undefined behaviour
+
+    push_opstack(frame, (char*) &result, JINT, frame->opstack_top, OPSTACK_BOTTOM);
+}
+
+static void _iand(StackFrame* frame) {
+    jint* value2 = (jint*) pop_opstack(frame);
+    jint* value1 = (jint*) pop_opstack(frame);
+    jint result = *value1 & *value2;
+
+    push_opstack(frame, (char*) &result, JINT, frame->opstack_top, OPSTACK_BOTTOM);
+}
+
+static void _ior(StackFrame* frame) {
+    jint* value2 = (jint*) pop_opstack(frame);
+    jint* value1 = (jint*) pop_opstack(frame);
+    jint result = *value1 | *value2;
+
+    push_opstack(frame, (char*) &result, JINT, frame->opstack_top, OPSTACK_BOTTOM);
+}
+
+static void _ixor(StackFrame* frame) {
+    jint* value2 = (jint*) pop_opstack(frame);
+    jint* value1 = (jint*) pop_opstack(frame);
+    jint result = *value1 ^ *value2;
 
     push_opstack(frame, (char*) &result, JINT, frame->opstack_top, OPSTACK_BOTTOM);
 }
@@ -208,6 +232,18 @@ void execute(Cpu* cpu) {
 
         case iushr:
             _iushr(cpu->frame);
+            break;
+
+        case iand:
+            _iand(cpu->frame);
+            break;
+
+        case ior:
+            _ior(cpu->frame);
+            break;
+
+        case ixor:
+            _ixor(cpu->frame);
             break;
         
         default:

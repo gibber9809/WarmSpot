@@ -90,7 +90,13 @@ enum Opcodes {
 
     ishr = 0x7a,
 
-    iushr = 0x7c
+    iushr = 0x7c,
+
+    iand = 0x7e,
+
+    ior = 0x80,
+
+    ixor = 0x82
 };
 
 

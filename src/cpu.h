@@ -96,7 +96,9 @@ enum Opcodes {
 
     ior = 0x80,
 
-    ixor = 0x82
+    ixor = 0x82,
+
+    iinc = 0x84
 };
 
 

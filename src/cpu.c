@@ -145,6 +145,14 @@ static void _ixor(StackFrame* frame) {
     push_opstack(frame, (char*) &result, JINT, frame->opstack_top, OPSTACK_BOTTOM);
 }
 
+static void _iinc(StackFrame* frame, uint16_t index, uint8_t constant)
+{
+    jint inc = (jint) *((jbyte*)&constant);
+    jint* value = (jint*) get_local_var(frame, index);
+
+    *value += inc;
+}
+
 void execute(Cpu* cpu) {
     uint8_t* code = cpu->frame->code;
     jlong* opstack_base = cpu->frame->opstack_base;
@@ -244,6 +252,11 @@ void execute(Cpu* cpu) {
 
         case ixor:
             _ixor(cpu->frame);
+            break;
+        
+        case iinc:
+            _iinc(cpu->frame, (uint16_t) code[pc+1], code[pc+2]);
+            pc_increment = 3;
             break;
         
         default:
